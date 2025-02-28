@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weather App</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            background: linear-gradient(135deg, #6dd5ed, #2193b0);
+            color: white;
+            text-align: center;
+            transition: background 0.5s ease-in-out;
+        }
+
+        h1 {
+            margin-bottom: 20px;
+        }
+
+        .search-box {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .search-box input {
+            padding: 10px;
+            font-size: 1em;
+            border-radius: 5px;
+            border: none;
+        }
+
+        .search-box button {
+            padding: 10px;
+            font-size: 1em;
+            background-color: orange;
+            color: white;
+            border: none;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+
+        .weather-card {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.1);
+            min-width: 300px;
+        }
+
+        .weather-card img {
+            width: 100px;
+        }
+
+        .temp-toggle {
+            margin-top: 10px;
+            cursor: pointer;
+            font-size: 0.9em;
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>🌤 Weather App</h1>
+    <div class="search-box">
+        <input type="text" id="cityInput" placeholder="Enter city name...">
+        <button onclick="fetchWeather()">Search</button>
+    </div>
+    <div class="weather-card" id="weatherCard">
+        <h2 id="location">Fetching location...</h2>
+        <img id="weatherIcon" src="" alt="Weather Icon">
+        <h3 id="temperature">--°C</h3>
+        <p id="weatherDescription">Loading...</p>
+        <span class="temp-toggle" onclick="toggleTemperature()">Switch to °F</span>
+    </div>
+
+    <script>
+        const apiKey = "YOUR_API_KEY";  // Replace with your OpenWeatherMap API key
+        let isCelsius = true;
+
+        async function fetchWeather(city = null) {
+            let url;
+            if (city) {
+                url = `https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${apiKey}&units=metric`;
+            } else {
+                if (navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition(async (position) => {
+                        const { latitude, longitude } = position.coords;
+                        url = `https://api.openweathermap.org/data/2.5/weather?lat=${latitude}&lon=${longitude}&appid=${apiKey}&units=metric`;
+                        fetchWeatherData(url);
+                    });
+                    return;
+                } else {
+                    alert("Geolocation not supported!");
+                    return;
+                }
+            }
+            fetchWeatherData(url);
+        }
+
+        async function fetchWeatherData(url) {
+            try {
+                const response = await fetch(url);
+                const data = await response.json();
+
+                if (data.cod !== 200) {
+                    alert("City not found!");
+                    return;
+                }
+
+                document.getElementById("location").textContent = data.name + ", " + data.sys.country;
+                document.getElementById("temperature").textContent = Math.round(data.main.temp) + "°C";
+                document.getElementById("weatherDescription").textContent = data.weather[0].description;
+
+                const weatherIcon = document.getElementById("weatherIcon");
+                weatherIcon.src = `https://img.icons8.com/?size=100&id=69bf287oWHbX&format=png&color=000000`;
+
+                updateBackground(data.weather[0].main);
+            } catch (error) {
+                alert("Error fetching data!");
+            }
+        }
+
+        function updateBackground(weatherCondition) {
+            let bg;
+            switch (weatherCondition.toLowerCase()) {
+                case "clear":
+                    bg = "linear-gradient(135deg, #FFD700, #FFA500)";
+                    break;
+                case "clouds":
+                    bg = "linear-gradient(135deg, #B0C4DE, #708090)";
+                    break;
+                case "rain":
+                    bg = "linear-gradient(135deg, #1E90FF, #4682B4)";
+                    break;
+                case "snow":
+                    bg = "linear-gradient(135deg, #FFFFFF, #B0E0E6)";
+                    break;
+                case "thunderstorm":
+                    bg = "linear-gradient(135deg, #4B0082, #800000)";
+                    break;
+                default:
+                    bg = "linear-gradient(135deg, #6dd5ed, #2193b0)";
+            }
+            document.body.style.background = bg;
+        }
+
+        function toggleTemperature() {
+            let tempElement = document.getElementById("temperature");
+            let currentTemp = parseInt(tempElement.textContent);
+
+            if (isCelsius) {
+                let fahrenheit = Math.round((currentTemp * 9/5) + 32);
+                tempElement.textContent = fahrenheit + "°F";
+                document.querySelector(".temp-toggle").textContent = "Switch to °C";
+            } else {
+                let celsius = Math.round((currentTemp - 32) * 5/9);
+                tempElement.textContent = celsius + "°C";
+                document.querySelector(".temp-toggle").textContent = "Switch to °F";
+            }
+
+            isCelsius = !isCelsius;
+        }
+
+        // Fetch weather based on location when the page loads
+        fetchWeather();
+    </script>
+
+</body>
+</html>
